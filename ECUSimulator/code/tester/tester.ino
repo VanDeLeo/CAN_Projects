@@ -8,6 +8,9 @@ const unsigned long ID_REQUEST = 0x7E0; //CAN ID for request
 
 const unsigned long ID_RESPONSE = 0x7E8; //CAN ID for response
 
+unsigned long lastTesterPresent = 0;
+const unsigned long testerPresentInterval = 2000;
+
 void sendUDS(byte* data, byte len, const char* description) {
   CAN.sendMsgBuf(ID_REQUEST, 0, len, data);
   Serial.print("Sent → ");
@@ -24,24 +27,24 @@ void sendUDS(byte* data, byte len, const char* description) {
 void setup() {
   Serial.begin(115200);
 
-  while (CAN_OK != CAN.begin(CAN_500KBPS)) {
+  while (CAN_OK != CAN.begin(MCP_ANY, CAN_500KBPS, MCP_8MHZ)) {
     Serial.println("Waiting for CAN bus...");
     delay(100);
   }
   Serial.println("CAN bus initialized.");
 
   // UDS_Sim: Diagnostic Session Control (0x10)
-  byte sessionControl[] = {0x02, 0x10, 0x01}; // 0x02 = request, 0x10 = service ID, 0x01 = default session
-  sendUDS(sessionControl, sizeof(sessionControl), "Diagnostic Session Control");
+  // byte sessionControl[] = {0x02, 0x10, 0x01}; // 0x02 = request, 0x10 = service ID, 0x01 = default session
+  // sendUDS(sessionControl, sizeof(sessionControl), "Diagnostic Session Control");
 
-  delay(500);
+  // delay(500);
 
 }
 
 void loop() {
 
   //Tester Present Sim
-  if (millis() - lastTesterPresent > testterPresentInterval)
+  if (millis() - lastTesterPresent > testerPresentInterval)
   {
     byte testerPresent[] = {0x02, 0x3E, 0x00}; // Tester Present request
     sendUDS(testerPresent, sizeof(testerPresent), "Tester Present");
@@ -49,7 +52,7 @@ void loop() {
   }
 
   if (CAN.checkReceive() == CAN_MSGAVAIL) {
-    long unsigned long rxID;
+    unsigned long rxID;
     byte len = 0;
     byte rxBuf[8];
 
